@@ -79,6 +79,7 @@ TimerInterruptHandler(int dummy)
            delete ptr;
         }
         //printf("[%d] Timer interrupt.\n", stats->totalTicks);
+        // TODO: Check if algorithm we are using is pre-emptive, if not then we just disable the YieldOnReturn() method
         interrupt->YieldOnReturn();
     }
 }
@@ -170,8 +171,11 @@ Initialize(int argc, char **argv)
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
     // object to save its state. 
-    currentThread = new NachOSThread("main");		
+    currentThread = new NachOSThread("main");
     currentThread->setStatus(RUNNING);
+    currentThread->start_cpu_burst_time = stats->totalTicks;
+    currentThread->start_time = stats->totalTicks;
+    stats->start_time = stats->totalTicks;
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
@@ -200,6 +204,7 @@ Initialize(int argc, char **argv)
 void
 Cleanup()
 {
+    // TODO: Print statistics here
     printf("\nCleaning up...\n");
 #ifdef NETWORK
     delete postOffice;

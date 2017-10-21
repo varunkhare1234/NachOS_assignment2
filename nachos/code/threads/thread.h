@@ -136,6 +136,13 @@ class NachOSThread {
     void IncInstructionCount();
     unsigned GetInstructionCount();
 
+    // Thread statistics
+    unsigned start_cpu_burst_time, end_cpu_burst_time;
+    unsigned start_ready_queue_time, end_ready_queue_time;
+    unsigned min_cpu_burst_time = INT_MAX, max_cpu_burst_time = 0, cum_cpu_burst_time = 0, sq_cpu_burst_time = 0;
+    unsigned start_time, end_time;
+    unsigned cpu_burst_count = 0;
+
   private:
     // some of the private data for this class is listed above
     
