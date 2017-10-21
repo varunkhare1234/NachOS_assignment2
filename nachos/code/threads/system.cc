@@ -172,6 +172,7 @@ Initialize(int argc, char **argv)
     // object to save its state. 
     currentThread = new NachOSThread("main");		
     currentThread->setStatus(RUNNING);
+    currentThread->start_cpu = totalTicks;
 
     interrupt->Enable();
     CallOnUserAbort(Cleanup);			// if user hits ctl-C
@@ -199,7 +200,27 @@ Initialize(int argc, char **argv)
 //----------------------------------------------------------------------
 void
 Cleanup()
-{
+{   
+    int sum_of_all_cpu_bursts = currentThread->total_cpu;
+    while (sleepQueueHead != NULL) {
+        ptr = sleepQueueHead;
+        sum_of_all_cpu_bursts += ptr->GetThread()->total_cpu;
+        sleepQueueHead = sleepQueueHead->GetNext();
+        delete ptr;
+     }
+    ptr = listOfReadyThreads->first;
+    while (ptr != NULL) {
+        sum_of_all_cpu_bursts += ptr->total_cpu;
+        delete ptr;
+        ptr = ptr->next;
+     }
+    delete ptr; 
+    
+    printf("Statistics\n");
+    printf("-----------------------------------------------\n");
+    printf("Total CPU busy time: %d\n",userTicks );
+    printf("Total Execution time: %d\n",sum_of_all_cpu_bursts);
+
     printf("\nCleaning up...\n");
 #ifdef NETWORK
     delete postOffice;

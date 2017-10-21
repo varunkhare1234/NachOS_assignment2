@@ -1,4 +1,4 @@
-// scheduler.cc 
+    // scheduler.cc 
 //	Routines to choose the next thread to run, and to dispatch to
 //	that thread.
 //
@@ -56,6 +56,7 @@ ProcessScheduler::MoveThreadToReadyQueue (NachOSThread *thread)
     DEBUG('t', "Putting thread %s with PID %d on ready list.\n", thread->getName(), thread->GetPID());
 
     thread->setStatus(READY);
+    thread->start_ready_queue = totalTicks;
     listOfReadyThreads->Append((void *)thread);
 }
 
@@ -69,8 +70,12 @@ ProcessScheduler::MoveThreadToReadyQueue (NachOSThread *thread)
 
 NachOSThread *
 ProcessScheduler::SelectNextReadyThread ()
-{
-    return (NachOSThread *)listOfReadyThreads->Remove();
+{   
+    NachOSThread removed_thread = (NachOSThread *)listOfReadyThreads->Remove();
+    removed_thread->end_ready_queue = totalTicks;
+    removed_thread->total_ready += removed_thread->end_ready_queue - removed_thread->start_ready_queue;
+    removed_thread->ready_burst_no++; 
+    return removed_thread;
 }
 
 //----------------------------------------------------------------------
@@ -104,7 +109,7 @@ ProcessScheduler::ScheduleThread (NachOSThread *nextThread)
 
     currentThread = nextThread;		    // switch to the next thread
     currentThread->setStatus(RUNNING);      // nextThread is now running
-    
+    currentThread->start_cpu = totalTicks;
     DEBUG('t', "Switching from thread \"%s\" with pid %d to thread \"%s\" with pid %d\n",
 	  oldThread->getName(), oldThread->GetPID(), nextThread->getName(), nextThread->GetPID());
     

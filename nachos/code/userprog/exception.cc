@@ -110,6 +110,13 @@ ExceptionHandler(ExceptionType which)
        // The children will continue to run.
        // We will worry about this when and if we implement signals.
        exitThreadArray[currentThread->GetPID()] = true;
+       currentThread->end_cpu = totalTicks;
+       currentThread->total_cpu = currentThread->total_cpu + currentThread->end_cpu - currentThread->start_cpu; 
+       currentThread->cpu_burst_no++;
+       currentThread->total_square_cpu+= (currentThread->end_cpu - currentThread->start_cpu)*(currentThread->end_cpu - currentThread->start_cpu);
+       currentThread->min_cpu= min(currentThread->end_cpu - currentThread->start_cpu, currentThread->min_cpu) ;
+       currentThread->max_cpu= max(currentThread->end_cpu - currentThread->start_cpu, currentThread->max_cpu) ;
+       
 
        // Find out if all threads have called exit
        for (i=0; i<thread_index; i++) {

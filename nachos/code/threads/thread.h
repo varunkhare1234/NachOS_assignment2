@@ -140,6 +140,13 @@ class NachOSThread {
   public:
   int start_cpu, end_cpu; //timers for the CPU 
   int start_ready_queue, end_ready_queue; //timers for the ready queue
+  int total_cpu, total_ready;
+  int cpu_burst_no, ready_burst_no;
+  int start, end;
+  int min_cpu, max_cpu;
+  int total_square_cpu;
+  
+  
 
   private:
     // some of the private data for this class is listed above

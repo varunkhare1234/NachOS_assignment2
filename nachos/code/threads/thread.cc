@@ -40,6 +40,20 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     stack = NULL;
     status = JUST_CREATED;
     priority_value = priority;
+    start_cpu = 0;
+    end_cpu = 0;
+    start_ready_queue = 0;
+    end_ready_queue = 0;
+    total_cpu = 0;
+    total_ready = 0;
+    start = 0;
+    end = 0;
+    cpu_burst_no = 0;
+    ready_burst_no = 0;
+    min_cpu=INT_MAX;
+    max_cpu=0;
+    total_square_cpu=0;
+
 #ifdef USER_PROGRAM
     space = NULL;
     stateRestored = true;
@@ -221,6 +235,13 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
     NachOSThread *nextThread;
 
     status = BLOCKED;
+    end_cpu = totalTicks;
+    total_cpu += end_cpu - start_cpu;
+    cpu_burst_no++;
+    min_cpu = min(min_cpu, end_cpu - start_cpu);
+    max_cpu = max(max_cpu, end_cpu - start_cpu);
+    total_square_cpu += (end_cpu - start_cpu)*(end_cpu - start_cpu); 
+
 
     // Set exit code in parent's structure provided the parent hasn't exited
     if (ppid != -1) {
@@ -308,6 +329,12 @@ NachOSThread::PutThreadToSleep ()
     DEBUG('t', "Sleeping thread \"%s\" with pid %d\n", getName(), pid);
 
     status = BLOCKED;
+    end_cpu = totalTicks;
+    total_cpu = total_cpu + end_cpu - start_cpu;
+    cpu_burst_no++;
+    total_square_cpu += (end_cpu - start_cpu)*(end_cpu - start_cpu);
+    min_cpu = min(min_cpu, (end_cpu - start_cpu));
+    max_cpu = max(max_cpu, (end_cpu - start_cpu));
     while ((nextThread = scheduler->SelectNextReadyThread()) == NULL)
 	interrupt->Idle();	// no one to run, wait for an interrupt
         
