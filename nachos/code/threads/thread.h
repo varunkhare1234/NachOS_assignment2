@@ -110,6 +110,7 @@ class NachOSThread {
 						// overflowed its stack
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
+    ThreadStatus getStatus() { return (status); }
     void Print() { printf("%s, ", name); }
 
     inline int GetPID (void) { return pid; }
@@ -136,6 +137,10 @@ class NachOSThread {
     void IncInstructionCount();
     unsigned GetInstructionCount();
 
+  public:
+  int start_cpu, end_cpu; //timers for the CPU 
+  int start_ready_queue, end_ready_queue; //timers for the ready queue
+
   private:
     // some of the private data for this class is listed above
     
@@ -146,6 +151,7 @@ class NachOSThread {
     char* name;
 
     int pid, ppid;			// My pid and my parent's pid
+    
 
     int childpidArray[MAX_CHILD_COUNT]; // My children
     int childexitcode[MAX_CHILD_COUNT]; // Exit code of my children (return values for Join calls)
