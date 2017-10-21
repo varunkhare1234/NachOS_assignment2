@@ -140,30 +140,6 @@ Initialize(int argc, char **argv)
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))
         debugUserProg = TRUE;
-    else if(!strcmp(*argv, "-F")){
-        ifstream inFile;
-		inFile.open(*(argv+1));
-		if (!inFile) {
-			cerr << "Unable to open file ";
-			exit(1);   // call system to stop
-		}
-		string line;
-
-		while (getline(inFile, line)){
-			istringstream iss(line);
-			string address;
-			int priority_value;
-			if(iss >> address >> priority_value){
-                newThread = new NachOSThread(address, priority_value);
-                scheduler->MoveThreadToReadyQueue(newThread);
-            }
-			if(iss >> address){
-                newThread = new NachOSThread(address);
-                scheduler->MoveThreadToReadyQueue(newThread);
-			}	
-		}
-        
-    } 
 #endif
 #ifdef FILESYS_NEEDED
 	if (!strcmp(*argv, "-f"))

@@ -62,7 +62,7 @@ using namespace std;
 
 extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
 extern void Print(char *file), PerformanceTest(void);
-extern void LaunchUserProcess(char *file), ConsoleTest(char *in, char *out);
+extern void LaunchUserProcess(char *file), ConsoleTest(char *in, char *out), ThreadStart(int dummy);
 extern void MailTest(int networkID);
 
 //----------------------------------------------------------------------
@@ -78,6 +78,7 @@ extern void MailTest(int networkID);
 //	"argv" is an array of strings, one for each command line argument
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 //----------------------------------------------------------------------
+
 
 int
 main(int argc, char **argv)
@@ -114,8 +115,50 @@ main(int argc, char **argv)
 					// for console input
 	}
 	else if(!strcmp(*argv, "-F")){
-		ifstream inFile;
-		inFile.open(*(argv+1));
+        char* filename = *(argv+1);
+        int jobSetSize = 0, priority[1000];
+        FILE *fp;
+        OpenFile *executable;
+        char threadName[20];
+        char line[100], jobTitle[1000][100];
+
+        if(filename == NULL){
+            printf("Unable to open file %s\n", filename);
+        }
+
+        // TODO: Read from file line by line
+        fp = fopen(filename, "r");
+        while(1){
+            if(fgets(line, 100, fp) == NULL)
+                break;
+            //printf("%s\n", line);
+            if(strstr(line, " ")){
+                sscanf(line, "%s %d\n", jobTitle[jobSetSize], priority+jobSetSize);
+            }
+            else{
+                priority[jobSetSize] = 100;
+                sscanf(line, "%s\n", jobTitle[jobSetSize]);
+            }
+            //printf("%d\n", jobTitle[jobSetSize]);
+            jobSetSize++;
+        }
+
+        //jobSetSize = 2;
+        for(int i = 0; i<jobSetSize; i++){
+            executable = fileSystem->Open(jobTitle[i]);
+            sprintf(threadName, "Thread-%d", i);
+            NachOSThread *newThread = new NachOSThread(threadName, priority[i]);
+            newThread->space = new ProcessAddressSpace(executable);
+            delete executable;
+
+            // Initialize thread
+            newThread->space->InitUserModeCPURegisters();
+            newThread->SaveUserState();
+            newThread->CreateThreadStack(ThreadStart, 0);
+
+            newThread->Schedule();
+        }
+
 	}
 #endif // USER_PROGRAM
 #ifdef FILESYS
@@ -150,6 +193,13 @@ main(int argc, char **argv)
         }
 #endif // NETWORK
     }
+
+    // Exit main, and update the datastructure
+    exitThreadArray[currentThread->GetPID()] = true;
+
+    // Find out if all threads have called exit
+    for(int i = 0; i<thread_index; i++)
+        if(!exitThreadArray[i]) break;
 
     currentThread->FinishThread();	// NOTE: if the procedure "main" 
 				// returns, then the program "nachos"

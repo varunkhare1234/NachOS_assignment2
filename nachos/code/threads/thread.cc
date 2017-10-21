@@ -32,7 +32,7 @@
 //	"threadName" is an arbitrary string, useful for debugging.
 //----------------------------------------------------------------------
 
-NachOSThread::NachOSThread(char* threadName, int priority = 100)
+NachOSThread::NachOSThread(char* threadName, int priority)
 {
     int i;
     name = threadName;

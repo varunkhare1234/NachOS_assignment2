@@ -14,6 +14,12 @@
 #include "addrspace.h"
 #include "synch.h"
 
+// To start running a new thread
+void ThreadStart(int dummy){
+    currentThread->Startup();
+    machine->Run();
+}
+
 //----------------------------------------------------------------------
 // LaunchUserProcess
 // 	Run a user program.  Open the executable, load it into

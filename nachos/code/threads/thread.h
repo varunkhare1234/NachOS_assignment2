@@ -84,7 +84,7 @@ class NachOSThread {
     int priority_value; // priority value of the thread for scheduling
 
   public:
-    NachOSThread(char* debugName);		// initialize a Thread 
+    NachOSThread(char* debugName, int priority = 100);		// initialize a Thread 
     ~NachOSThread(); 				// deallocate a Thread
 					// NOTE -- thread being deleted
 					// must not be running when delete 
