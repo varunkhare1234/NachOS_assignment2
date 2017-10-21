@@ -40,6 +40,9 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     stack = NULL;
     status = JUST_CREATED;
     priority_value = priority;
+    stats->total_threads++;
+    start_ready_queue_time = stats->totalTicks;
+    end_ready_queue_time = stats->totalTicks;
 #ifdef USER_PROGRAM
     space = NULL;
     stateRestored = true;
@@ -220,6 +223,13 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
 
     NachOSThread *nextThread;
 
+    // Process must be going from READY to BLOCKED state
+    end_time = stats->totalTicks;
+    end_cpu_burst_time = stats->totalTicks;
+    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
+    stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+
     status = BLOCKED;
 
     // Set exit code in parent's structure provided the parent hasn't exited
@@ -239,6 +249,14 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
         }
         else interrupt->Idle();      // no one to run, wait for an interrupt
     }
+
+    // Update ready queue for next thread
+    nextThread->start_cpu_burst_time = stats->totalTicks;
+    nextThread->end_ready_queue_time = stats->totalTicks;
+
+    // Update global ready queue stats
+    stats->total_ready_queue_time += nextThread->end_ready_queue_time - nextThread->start_ready_queue_time;
+
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }
 
@@ -265,15 +283,35 @@ NachOSThread::YieldCPU ()
 {
     NachOSThread *nextThread;
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    
+
     ASSERT(this == currentThread);
-    
+
+    // Stats update
+    end_time = stats->totalTicks;
+    end_cpu_burst_time = stats->totalTicks;
+    //min_cpu_burst_time = min(min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->max_cpu_burst_time = max(stats->max_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
+    stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+
     DEBUG('t', "Yielding thread \"%s\" with pid %d\n", getName(), pid);
-    
+
     nextThread = scheduler->SelectNextReadyThread();
+
     if (nextThread != NULL) {
-	scheduler->MoveThreadToReadyQueue(this);
-	scheduler->ScheduleThread(nextThread);
+        // Set Ready queue stats for current thread
+        start_ready_queue_time = stats->totalTicks;
+
+        // Stats for next thread
+        nextThread->start_cpu_burst_time = stats->totalTicks;
+        nextThread->end_ready_queue_time = stats->totalTicks;
+
+        // Update global ready queue stats
+        stats->total_ready_queue_time += nextThread->end_ready_queue_time - nextThread->start_ready_queue_time;
+
+        scheduler->MoveThreadToReadyQueue(this);
+        scheduler->ScheduleThread(nextThread);
     }
     (void) interrupt->SetLevel(oldLevel);
 }
@@ -307,10 +345,28 @@ NachOSThread::PutThreadToSleep ()
     
     DEBUG('t', "Sleeping thread \"%s\" with pid %d\n", getName(), pid);
 
+    // Process must be going from READY to BLOCKED state
+    end_time = stats->totalTicks;
+    end_cpu_burst_time = stats->totalTicks;
+    //min_cpu_burst_time = min(min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->max_cpu_burst_time = max(stats->max_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
+    stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+
     status = BLOCKED;
     while ((nextThread = scheduler->SelectNextReadyThread()) == NULL)
 	interrupt->Idle();	// no one to run, wait for an interrupt
-        
+
+    start_ready_queue_time = stats->totalTicks;
+
+    // Stats for next thread
+    nextThread->start_cpu_burst_time = stats->totalTicks;
+    nextThread->end_ready_queue_time = stats->totalTicks;
+
+    // Update global ready queue stats
+    stats->total_ready_queue_time += nextThread->end_ready_queue_time - nextThread->start_ready_queue_time;
+
     scheduler->ScheduleThread(nextThread); // returns when we've been signalled
 }
 

@@ -10,6 +10,7 @@
 
 #ifndef STATS_H
 #define STATS_H
+#define INT_MAX 32768
 
 #include "copyright.h"
 
@@ -27,6 +28,18 @@ class Statistics {
     int userTicks;       	// Time spent executing user code
 				// (this is also equal to # of
 				// user instructions executed)
+
+    // Overall Statistics
+    unsigned start_time;
+    unsigned total_ready_queue_time = 0;
+    //unsigned cpu_burst_time;
+    unsigned max_cpu_burst = 0;
+    unsigned min_cpu_burst = INT_MAX;
+    unsigned cpu_burst_count = 0;
+    unsigned cum_cpu_burst_time = 0;
+    unsigned sq_cpu_burst_time = 0;
+    unsigned total_threads = 0;
+
 
     int numDiskReads;		// number of disk read requests
     int numDiskWrites;		// number of disk write requests
