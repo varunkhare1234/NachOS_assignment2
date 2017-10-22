@@ -59,8 +59,8 @@ extern void Cleanup();
 //	Note that instead of calling YieldCPU() directly (which would
 //	suspend the interrupt handler, not the interrupted thread
 //	which is what we wanted to context switch), we set a flag
-//	so that once the interrupt handler is done, it will appear as 
-//	if the interrupted thread called YieldCPU at the point it is 
+//	so that once the interrupt handler is done, it will appear as
+//	if the interrupted thread called YieldCPU at the point it is
 //	was interrupted.
 //
 //	"dummy" is because every interrupt handler takes one argument,
@@ -80,17 +80,18 @@ TimerInterruptHandler(int dummy)
         }
         //printf("[%d] Timer interrupt.\n", stats->totalTicks);
         // TODO: Check if algorithm we are using is pre-emptive, if not then we just disable the YieldOnReturn() method
-        interrupt->YieldOnReturn();
+        if(scheduler->sched_algo != ORIG && scheduler->sched_algo != SJFS)
+            interrupt->YieldOnReturn();
     }
 }
 
 //----------------------------------------------------------------------
 // Initialize
 // 	Initialize Nachos global data structures.  Interpret command
-//	line arguments in order to determine flags for the initialization.  
-// 
+//	line arguments in order to determine flags for the initialization.
+//
 //	"argc" is the number of command line arguments (including the name
-//		of the command) -- ex: "nachos -d +" -> argc = 3 
+//		of the command) -- ex: "nachos -d +" -> argc = 3
 //	"argv" is an array of strings, one for each command line argument
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 //----------------------------------------------------------------------
@@ -204,7 +205,18 @@ Initialize(int argc, char **argv)
 void
 Cleanup()
 {
-    // TODO: Print statistics here
+    // Print statistics here
+    printf("==================================\n");
+    printf("           STATISTICS\n");
+    printf("==================================\n");
+    printf("Total time = %d\n", stats->totalTicks);
+    printf("Max cpu burst = %d\n", stats->max_cpu_burst);
+    printf("Avg waiting queue time per process = %f\n", (float)(1.0*stats->total_ready_queue_time/stats->total_threads));
+    printf("Total wait time = %d\n", stats->total_ready_queue_time);
+    printf("Burst count = %d\n", stats->cpu_burst_count);
+    printf("Cum cpu burst time = %d\n", stats->cum_cpu_burst_time);
+    printf("total threads = %d\n", stats->total_threads);
+    printf("=========END STATISTICS===========\n");
     printf("\nCleaning up...\n");
 #ifdef NETWORK
     delete postOffice;

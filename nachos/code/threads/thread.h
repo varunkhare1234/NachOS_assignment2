@@ -38,6 +38,7 @@
 #define THREAD_H
 
 #define MAX_CHILD_COUNT 100
+//#define a 0.5
 
 #include "copyright.h"
 #include "utility.h"
@@ -115,6 +116,9 @@ class NachOSThread {
     inline int GetPID (void) { return pid; }
     inline int GetPPID (void) { return ppid; }
 
+    void setPriority(int p){priority_value = p;}
+    int getPriority(){return priority_value;}
+
     void SetChildExitCode (int childpid, int exitcode); // Called by an exiting child thread
 
     int CheckIfChild (int childpid);                    // Called by Join to verify that the caller
@@ -162,6 +166,8 @@ class NachOSThread {
     int waitchild_id;                   // Child I am waiting on (as a result of a Join call)
 
     unsigned instructionCount;		// Keeps track of the instruction count executed by this thread
+
+    void NonPreemptiveSJFS(NachOSThread *thread);
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 
