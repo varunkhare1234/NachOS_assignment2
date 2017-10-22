@@ -292,21 +292,24 @@ NachOSThread::YieldCPU ()
 
     ASSERT(this == currentThread);
 
+    // Stats update
+    end_time = stats->totalTicks;
+    end_cpu_burst_time = stats->totalTicks;
+    //min_cpu_burst = min(min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+    stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+    stats->max_cpu_burst = max(stats->max_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+    stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
+    stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+    // TODO: Write code to count number of non-zero cpu bursts
+
+    if(scheduler->sched_algo == SJFS)
+        NonPreemptiveSJFS(this);
+
     DEBUG('t', "Yielding thread \"%s\" with pid %d\n", getName(), pid);
 
     nextThread = scheduler->SelectNextReadyThread();
 
     if (nextThread != NULL) {
-        // Stats update
-        end_time = stats->totalTicks;
-        end_cpu_burst_time = stats->totalTicks;
-        //min_cpu_burst = min(min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
-        stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
-        stats->max_cpu_burst = max(stats->max_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
-        stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
-        stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
-        // TODO: Write code to count number of non-zero cpu bursts
-
         // Set Ready queue stats for current thread
         //start_ready_queue_time = stats->totalTicks;
 
@@ -317,8 +320,6 @@ NachOSThread::YieldCPU ()
         // Update global ready queue stats
         stats->total_ready_queue_time += nextThread->end_ready_queue_time - nextThread->start_ready_queue_time;
 
-        if(scheduler->sched_algo == SJFS)
-            NonPreemptiveSJFS(this);
         scheduler->MoveThreadToReadyQueue(this);
         scheduler->ScheduleThread(nextThread);
     }
