@@ -13,6 +13,11 @@
 #include "list.h"
 #include "thread.h"
 
+#define ORIG 0
+#define SJFS 1
+#define ROUND_ROBIN 2
+#define UNIX 3
+
 // The following class defines the scheduler/dispatcher abstraction -- 
 // the data structures and operations needed to keep track of which 
 // thread is running, and which threads are ready but not running.
@@ -21,6 +26,8 @@ class ProcessScheduler {
   public:
     ProcessScheduler();			// Initialize list of ready threads 
     ~ProcessScheduler();			// De-allocate ready list
+
+    int sched_algo = 0;
 
     void MoveThreadToReadyQueue(NachOSThread* thread);	// Thread can be dispatched.
     NachOSThread* SelectNextReadyThread();		// Dequeue first thread on the ready 

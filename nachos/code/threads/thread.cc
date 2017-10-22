@@ -39,9 +39,12 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
-    priority_value = priority;
+    if(scheduler->sched_algo == UNIX)
+        priority_value = priority;
+    else if(scheduler->sched_algo == SJFS)
+        priority_value = 0; // Value of s(0) in Nonpreemptive SJFS
     stats->total_threads++;
-    start_ready_queue_time = stats->totalTicks;
+    start_ready_queue_time = stats->totalTicks; // Probably not necessary
     end_ready_queue_time = stats->totalTicks;
 #ifdef USER_PROGRAM
     space = NULL;
@@ -226,9 +229,10 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
     // Process must be going from READY to BLOCKED state
     end_time = stats->totalTicks;
     end_cpu_burst_time = stats->totalTicks;
-    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
     stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
     stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+    // TODO: Write code to count number of non-zero cpu bursts, and some other miscellaneous statistics
 
     status = BLOCKED;
 
@@ -250,6 +254,8 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
         else interrupt->Idle();      // no one to run, wait for an interrupt
     }
 
+    if(scheduler->sched_algo == SJFS)
+        NonPreemptiveSJFS(this);
     // Update ready queue for next thread
     nextThread->start_cpu_burst_time = stats->totalTicks;
     nextThread->end_ready_queue_time = stats->totalTicks;
@@ -286,22 +292,23 @@ NachOSThread::YieldCPU ()
 
     ASSERT(this == currentThread);
 
-    // Stats update
-    end_time = stats->totalTicks;
-    end_cpu_burst_time = stats->totalTicks;
-    //min_cpu_burst_time = min(min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
-    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
-    stats->max_cpu_burst_time = max(stats->max_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
-    stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
-    stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
-
     DEBUG('t', "Yielding thread \"%s\" with pid %d\n", getName(), pid);
 
     nextThread = scheduler->SelectNextReadyThread();
 
     if (nextThread != NULL) {
+        // Stats update
+        end_time = stats->totalTicks;
+        end_cpu_burst_time = stats->totalTicks;
+        //min_cpu_burst = min(min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+        stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+        stats->max_cpu_burst = max(stats->max_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+        stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
+        stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+        // TODO: Write code to count number of non-zero cpu bursts
+
         // Set Ready queue stats for current thread
-        start_ready_queue_time = stats->totalTicks;
+        //start_ready_queue_time = stats->totalTicks;
 
         // Stats for next thread
         nextThread->start_cpu_burst_time = stats->totalTicks;
@@ -310,6 +317,8 @@ NachOSThread::YieldCPU ()
         // Update global ready queue stats
         stats->total_ready_queue_time += nextThread->end_ready_queue_time - nextThread->start_ready_queue_time;
 
+        if(scheduler->sched_algo == SJFS)
+            NonPreemptiveSJFS(this);
         scheduler->MoveThreadToReadyQueue(this);
         scheduler->ScheduleThread(nextThread);
     }
@@ -348,17 +357,20 @@ NachOSThread::PutThreadToSleep ()
     // Process must be going from READY to BLOCKED state
     end_time = stats->totalTicks;
     end_cpu_burst_time = stats->totalTicks;
-    //min_cpu_burst_time = min(min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
-    stats->min_cpu_burst_time = min(stats->min_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
-    stats->max_cpu_burst_time = max(stats->max_cpu_burst_time, end_cpu_burst_time - start_cpu_burst_time);
+    //min_cpu_burst = min(min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+    stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
+    stats->max_cpu_burst = max(stats->max_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
     stats->cum_cpu_burst_time += end_cpu_burst_time - start_cpu_burst_time;
     stats->sq_cpu_burst_time += (end_cpu_burst_time - start_cpu_burst_time)*(end_cpu_burst_time - start_cpu_burst_time);
+    // TODO: Write code to count number of non-zero cpu bursts
+    if(scheduler->sched_algo == SJFS)
+        NonPreemptiveSJFS(this);
 
     status = BLOCKED;
     while ((nextThread = scheduler->SelectNextReadyThread()) == NULL)
 	interrupt->Idle();	// no one to run, wait for an interrupt
 
-    start_ready_queue_time = stats->totalTicks;
+    //start_ready_queue_time = stats->totalTicks;
 
     // Stats for next thread
     nextThread->start_cpu_burst_time = stats->totalTicks;
@@ -617,4 +629,17 @@ unsigned
 NachOSThread::GetInstructionCount (void)
 {
    return instructionCount;
+}
+
+//----------------------------------------------------------------------
+// NachOSThread::NonPreemptiveSJFS
+//  Calculates the estimated next CPU burst time of thread using exponential averaging
+//----------------------------------------------------------------------
+
+void
+NachOSThread::NonPreemptiveSJFS(NachOSThread *thread){
+    int s_n = thread->getPriority();
+    float a = 0.5; // The exponential average value
+    int p = a*(float)(thread->end_cpu_burst_time - thread->start_cpu_burst_time) + (1-a)*(float)s_n;
+    thread->setPriority(p);
 }

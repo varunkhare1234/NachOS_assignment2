@@ -117,6 +117,8 @@ main(int argc, char **argv)
 	else if(!strcmp(*argv, "-F")){
         char* filename = *(argv+1);
         int jobSetSize = 0, priority[1000];
+        int algorithm = atoi(*(argv+2));
+        scheduler->sched_algo = algorithm;
         FILE *fp;
         OpenFile *executable;
         char threadName[20];
@@ -126,7 +128,7 @@ main(int argc, char **argv)
             printf("Unable to open file %s\n", filename);
         }
 
-        // TODO: Read from file line by line
+        // Read file line by line
         fp = fopen(filename, "r");
         while(1){
             if(fgets(line, 100, fp) == NULL)
@@ -196,10 +198,6 @@ main(int argc, char **argv)
 
     // Exit main, and update the datastructure
     exitThreadArray[currentThread->GetPID()] = true;
-
-    // Find out if all threads have called exit
-    for(int i = 0; i<thread_index; i++)
-        if(!exitThreadArray[i]) break;
 
     currentThread->FinishThread();	// NOTE: if the procedure "main" 
 				// returns, then the program "nachos"
