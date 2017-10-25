@@ -13,10 +13,10 @@
 #include "list.h"
 #include "thread.h"
 
-#define ORIG 0
-#define SJFS 1
-#define ROUND_ROBIN 2
-#define UNIX 3
+#define ORIG 1
+#define SJFS 2
+#define ROUND_ROBIN 3
+#define UNIX 4
 
 // The following class defines the scheduler/dispatcher abstraction -- 
 // the data structures and operations needed to keep track of which 

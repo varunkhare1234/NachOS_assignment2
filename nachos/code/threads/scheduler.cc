@@ -57,6 +57,9 @@ ProcessScheduler::MoveThreadToReadyQueue (NachOSThread *thread)
 
     thread->setStatus(READY);
     thread->start_ready_queue_time = stats->totalTicks;
+    thread->end_sleep_time = stats->totalTicks;
+    thread->avg_sleep_time += thread->end_sleep_time - thread->start_sleep_time;
+    thread->io_burst_count++;
     listOfReadyThreads->SortedInsert((void *)thread, thread->getPriority());
 }
 

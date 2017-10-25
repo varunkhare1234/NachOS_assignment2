@@ -26,6 +26,7 @@ NachOSThread *threadArray[MAX_THREAD_COUNT];  // Array of thread pointers
 unsigned thread_index;                  // Index into this array (also used to assign unique pid)
 bool initializedConsoleSemaphores;
 bool exitThreadArray[MAX_THREAD_COUNT];  //Marks exited threads
+unsigned quantumFIFO;                    // Scheduling quanta for Preemptive round robin algorithm
 
 TimeSortedWaitQueue *sleepQueueHead;    // Needed to implement SC_Sleep
 
@@ -79,9 +80,21 @@ TimerInterruptHandler(int dummy)
            delete ptr;
         }
         //printf("[%d] Timer interrupt.\n", stats->totalTicks);
-        // TODO: Check if algorithm we are using is pre-emptive, if not then we just disable the YieldOnReturn() method
-        if(scheduler->sched_algo != ORIG && scheduler->sched_algo != SJFS)
-            interrupt->YieldOnReturn();
+        // Check if algorithm we are using is pre-emptive, if not then we just disable the YieldOnReturn() method
+        if(scheduler->sched_algo != ORIG && scheduler->sched_algo != SJFS){
+            // Preemptive round robin
+            if(scheduler->sched_algo >= 3 && scheduler->sched_algo <= 6){
+                if(scheduler->sched_algo == 3)
+                    quantumFIFO = 130/4;
+                else if(scheduler->sched_algo == 4)
+                    quantumFIFO = 130/2;
+                else if(scheduler->sched_algo == 5)
+                    quantumFIFO = 130; // TODO: Temporary, change later
+
+                if(stats->totalTicks - currentThread->start_cpu_burst_time >= quantumFIFO)
+                    interrupt->YieldOnReturn();
+            }
+        }
     }
 }
 
@@ -214,8 +227,8 @@ Cleanup()
     printf("Avg waiting queue time per process = %f\n", (float)(1.0*stats->total_ready_queue_time/stats->total_threads));
     printf("Total wait time = %d\n", stats->total_ready_queue_time);
     printf("Burst count = %d\n", stats->cpu_burst_count);
-    printf("Cum cpu burst time = %d\n", stats->cum_cpu_burst_time);
-    printf("total threads = %d\n", stats->total_threads);
+    printf("Average CPU burst time = %f\n", (float)(1.0*stats->cpu_burst_count/stats->cpu_burst_count));
+    printf("Total threads = %d\n", stats->total_threads); // TODO: Includes main
     printf("=========END STATISTICS===========\n");
     printf("\nCleaning up...\n");
 #ifdef NETWORK
