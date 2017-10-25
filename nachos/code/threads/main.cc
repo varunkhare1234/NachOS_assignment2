@@ -117,8 +117,8 @@ main(int argc, char **argv)
 	else if(!strcmp(*argv, "-F")){
         char* filename = *(argv+1);
         int jobSetSize = 0, priority[1000];
-        int algorithm = atoi(*(argv+2));
-        scheduler->sched_algo = algorithm;
+        //int algorithm = atoi(*(argv+2));
+        int algo_type;
         FILE *fp;
         OpenFile *executable;
         char threadName[20];
@@ -130,6 +130,13 @@ main(int argc, char **argv)
 
         // Read file line by line
         fp = fopen(filename, "r");
+
+        // Read algorithm type
+        if(fgets(line, 100, fp) != NULL)
+            algo_type = atoi(line);
+        scheduler->sched_algo = algo_type;
+
+        // Read programs
         while(1){
             if(fgets(line, 100, fp) == NULL)
                 break;

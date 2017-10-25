@@ -39,6 +39,7 @@
 
 #define MAX_CHILD_COUNT 100
 //#define a 0.5
+#define INT_MAX 32768
 
 #include "copyright.h"
 #include "utility.h"
@@ -146,6 +147,7 @@ class NachOSThread {
     unsigned min_cpu_burst_time = INT_MAX, max_cpu_burst_time = 0, cum_cpu_burst_time = 0, sq_cpu_burst_time = 0;
     unsigned start_time, end_time;
     unsigned cpu_burst_count = 0;
+    unsigned start_sleep_time, end_sleep_time, avg_sleep_time = 0, io_burst_count = 0;
 
   private:
     // some of the private data for this class is listed above
