@@ -89,7 +89,23 @@ TimerInterruptHandler(int dummy)
                 else if(scheduler->sched_algo == 4)
                     quantumFIFO = 130/2;
                 else if(scheduler->sched_algo == 5)
-                    quantumFIFO = 130; // TODO: Temporary, change later
+                    quantumFIFO = 3*130/4; // TODO: Temporary, change later
+                else
+                    quantumFIFO = 130;
+
+                if(stats->totalTicks - currentThread->start_cpu_burst_time >= quantumFIFO)
+                    interrupt->YieldOnReturn();
+            }
+
+            if(scheduler->sched_algo >= 7 && scheduler->sched_algo <= 10){
+                if(scheduler->sched_algo == 7)
+                    quantumFIFO = 130/4;
+                else if(scheduler->sched_algo == 8)
+                    quantumFIFO = 130/2;
+                else if(scheduler->sched_algo == 9)
+                    quantumFIFO = 3*130/4; // TODO: Temporary, change later
+                else
+                    quantumFIFO = 130;
 
                 if(stats->totalTicks - currentThread->start_cpu_burst_time >= quantumFIFO)
                     interrupt->YieldOnReturn();
@@ -227,7 +243,8 @@ Cleanup()
     printf("Avg waiting queue time per process = %f\n", (float)(1.0*stats->total_ready_queue_time/stats->total_threads));
     printf("Total wait time = %d\n", stats->total_ready_queue_time);
     printf("Burst count = %d\n", stats->cpu_burst_count);
-    printf("Average CPU burst time = %f\n", (float)(1.0*stats->cpu_burst_count/stats->cpu_burst_count));
+    printf("Average CPU burst time = %f\n", (float)(1.0*stats->cum_cpu_burst_time/stats->cpu_burst_count));
+    printf("CPU utilization = %f\n", (float)(1.0*stats->cum_cpu_burst_time/stats->totalTicks));
     printf("Total threads = %d\n", stats->total_threads); // TODO: Includes main
     printf("=========END STATISTICS===========\n");
     printf("\nCleaning up...\n");

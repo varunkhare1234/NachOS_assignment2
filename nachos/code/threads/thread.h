@@ -148,7 +148,8 @@ class NachOSThread {
     unsigned start_time, end_time;
     unsigned cpu_burst_count = 0;
     unsigned start_sleep_time, end_sleep_time, avg_sleep_time = 0, io_burst_count = 0;
-
+    
+    int base_priority;
   private:
     // some of the private data for this class is listed above
     
@@ -169,7 +170,12 @@ class NachOSThread {
 
     unsigned instructionCount;		// Keeps track of the instruction count executed by this thread
 
+  public:
     void NonPreemptiveSJFS(NachOSThread *thread);
+
+    void UnixScheduler(NachOSThread *thread);
+
+    void updatePriority1();
 
 #ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 

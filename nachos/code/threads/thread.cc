@@ -52,6 +52,7 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     stateRestored = true;
 #endif
 
+    base_priority = 50+priority;
     threadArray[thread_index] = this;
     pid = thread_index;
     thread_index++;
@@ -262,6 +263,8 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
 
     if(scheduler->sched_algo == SJFS)
         NonPreemptiveSJFS(this);
+    if(scheduler->sched_algo >= 7 && scheduler->sched_algo <= 10)
+        UnixScheduler(this);
     // Update ready queue for next thread
     nextThread->start_cpu_burst_time = stats->totalTicks;
     nextThread->end_ready_queue_time = stats->totalTicks;
@@ -314,6 +317,8 @@ NachOSThread::YieldCPU ()
 
     if(scheduler->sched_algo == SJFS)
         NonPreemptiveSJFS(this);
+    if(scheduler->sched_algo >= 7 && scheduler->sched_algo <= 10)
+        UnixScheduler(this);
 
     DEBUG('t', "Yielding thread \"%s\" with pid %d\n", getName(), pid);
 
@@ -381,7 +386,8 @@ NachOSThread::PutThreadToSleep ()
 
     if(scheduler->sched_algo == SJFS)
         NonPreemptiveSJFS(this);
-
+    if(scheduler->sched_algo >= 7 && scheduler->sched_algo <= 10)
+        UnixScheduler(this);
     status = BLOCKED;
     while ((nextThread = scheduler->SelectNextReadyThread()) == NULL)
 	interrupt->Idle();	// no one to run, wait for an interrupt
@@ -658,4 +664,32 @@ NachOSThread::NonPreemptiveSJFS(NachOSThread *thread){
     float a = 0.5; // The exponential average value
     int p = a*(float)(thread->end_cpu_burst_time - thread->start_cpu_burst_time) + (1-a)*(float)s_n;
     thread->setPriority(p);
+}
+
+void
+updatePriority(int th){
+    NachOSThread* thread = (NachOSThread*)th;
+    thread->cum_cpu_burst_time /= 2.0;
+    // printf("shit#######################\n");
+    thread->setPriority(thread->getPriority() + thread->base_priority + thread->cum_cpu_burst_time/2.0); 
+}
+
+void
+NachOSThread::updatePriority1(){
+    // NachOSThread* thread = (NachOSThread*)th;
+    cum_cpu_burst_time /= 2.0;
+    setPriority(getPriority() + base_priority + cum_cpu_burst_time/2.0); 
+    // printf("shit.....................\n");
+}
+
+void
+NachOSThread::UnixScheduler(NachOSThread* thread){
+    scheduler->listOfReadyThreads->Mapcar(updatePriority);
+    TimeSortedWaitQueue* tmp = sleepQueueHead;
+    while (tmp != NULL)
+    {
+        tmp->GetThread()->updatePriority1();
+        tmp = tmp->GetNext();
+    }
+    updatePriority1();
 }
