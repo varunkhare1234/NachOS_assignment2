@@ -239,13 +239,15 @@ Cleanup()
     printf("           STATISTICS\n");
     printf("==================================\n");
     printf("Total time = %d\n", stats->totalTicks);
-    printf("Max cpu burst = %d\n", stats->max_cpu_burst);
+    printf("Max cpu burst = %d, min cpu burst=%d \n", stats->max_cpu_burst, stats->min_cpu_burst);
     printf("Avg waiting queue time per process = %f\n", (float)(1.0*stats->total_ready_queue_time/stats->total_threads));
     printf("Total wait time = %d\n", stats->total_ready_queue_time);
-    printf("Burst count = %d\n", stats->cpu_burst_count);
+    printf("Non-Zero Burst count = %d\n", stats->cpu_burst_count);
     printf("Average CPU burst time = %f\n", (float)(1.0*stats->cum_cpu_burst_time/stats->cpu_burst_count));
     printf("CPU utilization = %f\n", (float)(1.0*stats->cum_cpu_burst_time/stats->totalTicks));
     printf("Total threads = %d\n", stats->total_threads); // TODO: Includes main
+    printf("variance of thread utilisation = %f\n",(float)(1.0*stats->sq_thread_completion_time/stats->total_threads));
+    printf("Minimum thread completion time = %d, Maximum Thread Completion time =%d\n",stats->min_thread_completion_time,stats->max_thread_completion_time);
     printf("=========END STATISTICS===========\n");
     printf("\nCleaning up...\n");
 #ifdef NETWORK

@@ -43,6 +43,7 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     if(scheduler->sched_algo == SJFS)
         priority_value = 0; // Value of s(0) in Nonpreemptive SJFS
     stats->total_threads++;
+    start_time = stats->totalTicks;
     start_ready_queue_time = stats->totalTicks; // Probably not necessary
     end_ready_queue_time = stats->totalTicks;
     avg_sleep_time = 0;
@@ -230,6 +231,9 @@ NachOSThread::Exit (bool terminateSim, int exitcode)
     // Process must be going from READY to BLOCKED state
     end_time = stats->totalTicks;
     end_cpu_burst_time = stats->totalTicks;
+    stats->max_thread_completion_time = max(stats->max_thread_completion_time,end_time-start_time);
+    stats->min_thread_completion_time = min(stats->min_thread_completion_time, end_time-start_time);
+    stats->sq_thread_completion_time += (end_time-start_time)*(end_time-start_time);
     if(end_cpu_burst_time - start_cpu_burst_time > 0)
         stats->min_cpu_burst = min(stats->min_cpu_burst, end_cpu_burst_time - start_cpu_burst_time);
     if(end_cpu_burst_time - start_cpu_burst_time > 0)

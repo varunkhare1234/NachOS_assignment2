@@ -38,6 +38,9 @@ class Statistics {
     unsigned cpu_burst_count = 0;
     unsigned cum_cpu_burst_time = 0;
     unsigned sq_cpu_burst_time = 0;
+    unsigned max_thread_completion_time = 0;
+    unsigned min_thread_completion_time = 0;
+    unsigned sq_thread_completion_time = 0;
     unsigned total_threads = 0;
 
 
