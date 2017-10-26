@@ -683,7 +683,7 @@ NachOSThread::updatePriority1(){
 
 void
 NachOSThread::UnixScheduler(NachOSThread* thread){
-    List *templist;
+    List *templist = new List;
     scheduler->listOfReadyThreads->Mapcar(updatePriority);
     // Sorting the listOfReadyThreads
     NachOSThread *thr;
