@@ -39,9 +39,8 @@ NachOSThread::NachOSThread(char* threadName, int priority)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
-    if(scheduler->sched_algo == UNIX)
-        priority_value = priority;
-    else if(scheduler->sched_algo == SJFS)
+    priority_value = priority;
+    if(scheduler->sched_algo == SJFS)
         priority_value = 0; // Value of s(0) in Nonpreemptive SJFS
     stats->total_threads++;
     start_ready_queue_time = stats->totalTicks; // Probably not necessary
@@ -684,7 +683,20 @@ NachOSThread::updatePriority1(){
 
 void
 NachOSThread::UnixScheduler(NachOSThread* thread){
+    List *templist;
     scheduler->listOfReadyThreads->Mapcar(updatePriority);
+    // Sorting the listOfReadyThreads
+    NachOSThread *thr;
+    while(!scheduler->listOfReadyThreads->IsEmpty()){
+        thr = (NachOSThread *)scheduler->listOfReadyThreads->Remove();
+        templist->SortedInsert((void *)thr, thr->getPriority());
+    }
+    while(!templist->IsEmpty()){
+        thr = (NachOSThread *)templist->Remove();
+        scheduler->listOfReadyThreads->SortedInsert((void *)thr, thr->getPriority());
+    }
+    delete templist;
+
     TimeSortedWaitQueue* tmp = sleepQueueHead;
     while (tmp != NULL)
     {

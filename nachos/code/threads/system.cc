@@ -89,9 +89,9 @@ TimerInterruptHandler(int dummy)
                 else if(scheduler->sched_algo == 4)
                     quantumFIFO = 130/2;
                 else if(scheduler->sched_algo == 5)
-                    quantumFIFO = 3*130/4; // TODO: Temporary, change later
+                    quantumFIFO = 3*130/4;
                 else
-                    quantumFIFO = 130;
+                    quantumFIFO = 130; // TODO: Temporary, change later
 
                 if(stats->totalTicks - currentThread->start_cpu_burst_time >= quantumFIFO)
                     interrupt->YieldOnReturn();
@@ -103,9 +103,9 @@ TimerInterruptHandler(int dummy)
                 else if(scheduler->sched_algo == 8)
                     quantumFIFO = 130/2;
                 else if(scheduler->sched_algo == 9)
-                    quantumFIFO = 3*130/4; // TODO: Temporary, change later
+                    quantumFIFO = 3*130/4;
                 else
-                    quantumFIFO = 130;
+                    quantumFIFO = 130; // TODO: Temporary, change later
 
                 if(stats->totalTicks - currentThread->start_cpu_burst_time >= quantumFIFO)
                     interrupt->YieldOnReturn();
